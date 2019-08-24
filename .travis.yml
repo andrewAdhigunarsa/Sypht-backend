@@ -1,0 +1,18 @@
+language: node_js
+node_js:
+  - 10.16.3
+cache: npm
+
+
+install:
+  - npm ci
+
+script:
+  - npm test
+
+deploy:
+  provider: script
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
+  on:
+    branch: master
