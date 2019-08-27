@@ -3,8 +3,8 @@ const express = require('express');
 const app = express();
 const morgan = require('morgan');
 const axios = require('axios');
-const multer = require('multer');
 const cors = require('cors');
+const fs = require('fs');
 
 app.use(morgan('combined'));
 app.use(cors());
@@ -34,16 +34,60 @@ app.post("/token", (req,res) => {
     };
     axios(options).then(
         (response)=>{
-            console.log(response.data);
             res.send(response.data);
         }
     ).catch(
         (e)=>{
-            console.error(e)
             res.send(e)
         }
     )
     
+})
+
+app.post('/upload',(req,res)=>{
+
+    if(req.files !== null){
+        const url = 'https://api.sypht.com/fileupload/';
+        const headerToken = req.headers.Authorization;
+        const file = req.files.file;
+
+        file.mv(`${__dirname}/files/${file.name}`, (err)=>{
+            if(err){
+                console.log(err);
+                return res.status(500).send(err)
+            }
+
+            const formData = {
+                fileToUpload: fs.createReadStream(__dirname,file.name),
+                fieldSets: JSON.stringify(['sypht.generic'])
+            }
+            const options = {
+                url: url,
+                formData: formData,
+                headers: {
+                    'Authorization': headerToken
+                },
+            }
+
+            axios(options).then(
+                (response) => {
+                    console.log(response.data);
+                    res.json({
+                        fileName: file.name,
+                        filePath: `${__dirname}/files`,
+                        resData: response.data
+                    })
+                }
+            ).catch(
+                (e) => {
+                    console.error(e);
+                    res.status(400).send(e)
+                }
+            )
+        })
+
+    }
+    return res.status(400).json({msg:'req is null'})
 })
 
 app.listen(3003,()=>{
